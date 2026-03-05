@@ -41,20 +41,20 @@ def dhcp_request(offer, iface):
 
     # Get the DHCP server's IP
     server_ip = None
-    for option in dhcp_offer[DHCP].options:
+    for option in offer[DHCP].options:
         if isinstance(option, tuple) and option[0] == 'server_id':
             server_ip = option[1]
             break
 
     # Just in case the server_id option is missing
     if not server_ip:
-        server_ip = dhcp_offer[IP].src
+        server_ip = offer[IP].src
 
-    ether = Ether(src=dhcp_offer[Ether].dst, dst="ff:ff:ff:ff:ff:ff")
+    ether = Ether(src=offer[Ether].dst, dst="ff:ff:ff:ff:ff:ff")
     ip = IP(src="0.0.0.0", dst="255.255.255.255")
     udp = UDP(sport=68, dport=67)
-    bootp = BOOTP(op=1, xid=transaction_id, chaddr=client_mac)
-    dhcp = DHCP([
+    bootp = BOOTP(op=1, xid=transID, chaddr=client_mac)
+    dhcp = DHCP(options=[
         ("message-type", "request"),
         ("server_id", server_ip),
         ("requested_addr", offered_ip),
